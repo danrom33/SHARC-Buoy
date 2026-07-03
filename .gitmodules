@@ -1,3 +1,7 @@
 [submodule "Libraries/STM32CubeL4"]
 	path = Libraries/STM32CubeL4
 	url = https://github.com/STMicroelectronics/STM32CubeL4.git
+[submodule "Libraries/ArduCam-OV5642-SPI-STM32-Driver"]
+	path = Libraries/ArduCam-OV5642-SPI-STM32-Driver
+	url = https://github.com/danrom33/ArduCam-OV5642-SPI-STM32-Driver.git
+	branch = driver-refactor
