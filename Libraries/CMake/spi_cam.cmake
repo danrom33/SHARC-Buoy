@@ -12,7 +12,7 @@ add_library(SPI_CAM
 
 # Include headers
 target_include_directories(SPI_CAM 
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/ArduCam-OV5642-SPI-STM32-Driver/Inc"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ArduCam-OV5642-SPI-STM32-Driver/Inc"
 )
 
 # target_link_libraries(MAIN PUBLIC STM32CUBEL4_HAL)

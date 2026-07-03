@@ -19,7 +19,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "fatfs.h"
-
+#include "spi_cam.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <unistd.h> // Required for _write() syscall function
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -67,6 +70,7 @@ static void MX_LPUART1_UART_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_UART4_Init(void);
+// static void BspCOM_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -113,11 +117,11 @@ int main(void)
   MX_FATFS_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-   BspCOM_Init();
   // Make printf unbuffered so logs appear immediately
   setvbuf(stdout, NULL, _IONBF, 0);
 
-  printf("Hello World :)");
+  OV5642_Init(&hi2c1, &hspi1, GPIOC, GPIO_PIN_6);
+  OV5642_Take_Picture();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -246,7 +250,7 @@ static void MX_LPUART1_UART_Init(void)
   /* USER CODE END LPUART1_Init 1 */
   hlpuart1.Instance = LPUART1;
   hlpuart1.Init.BaudRate = 209700;
-  hlpuart1.Init.WordLength = UART_WORDLENGTH_7B;
+  hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
   hlpuart1.Init.StopBits = UART_STOPBITS_1;
   hlpuart1.Init.Parity = UART_PARITY_NONE;
   hlpuart1.Init.Mode = UART_MODE_TX_RX;
@@ -424,6 +428,11 @@ static void MX_DMA_Init(void)
   * @param None
   * @retval None
   */
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -438,10 +447,20 @@ static void MX_GPIO_Init(void)
   HAL_PWREx_EnableVddIO2();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : PC5 */
   GPIO_InitStruct.Pin = GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -451,24 +470,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-/**
-  * @brief Retargets the C library printf function to the LPUART1 peripheral (VCP).
-  * This is the standard syscall for ARM-GCC.
-  * @param file The file descriptor.
-  * @param ptr A pointer to the data to send.
-  * @param len The number of bytes to send.
-  * @return The number of bytes sent, or -1 on error.
-  */
-/* Bring up the board "COM" (USB VCP) so printf uses the on-board USB port */
-void BspCOM_Init(void)
-{
-    MX_GPIO_LPUART1_Init();
-    MX_LPUART1_UART_Init();
-
-    /* Optional: make stdio unbuffered so logs flush immediately */
-    setvbuf(stdout, NULL, _IONBF, 0);
-    setvbuf(stderr, NULL, _IONBF, 0);
-}
 
 /* Retarget printf/puts to LPUART1 (USB VCP) */
 int _write(int file, char *ptr, int len)
