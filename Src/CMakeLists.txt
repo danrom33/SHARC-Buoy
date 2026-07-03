@@ -16,4 +16,4 @@ target_include_directories(MAIN
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Inc"
 )
 
-target_link_libraries(MAIN PUBLIC STM32CUBEL4_HAL)
+target_link_libraries(MAIN PUBLIC SPI_CAM)

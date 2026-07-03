@@ -32,6 +32,6 @@ set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Src)
 
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/Inc)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/CMake/stm32cubel4.cmake)
+add_subdirectory(${CMAKE_SOURCE_DIR}/Libraries)
 
 add_subdirectory(${SRC_DIR})
