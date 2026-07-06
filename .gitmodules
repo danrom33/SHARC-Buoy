@@ -1,7 +1,3 @@
 [submodule "Libraries/STM32CubeL4"]
 	path = Libraries/STM32CubeL4
 	url = https://github.com/STMicroelectronics/STM32CubeL4.git
-[submodule "Libraries/OV5642-SPI-Driver"]
-	path = Libraries/OV5642-SPI-Driver
-	url = https://github.com/danrom33/OV5642-SPI-Driver.git
-	branch = driver-refactor
