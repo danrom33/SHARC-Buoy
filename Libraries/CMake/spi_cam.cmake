@@ -3,7 +3,7 @@ project(STM32)
 
 
 # Collect all .c source files in Core/Sr
-file(GLOB SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/ArduCam-OV5642-SPI-STM32-Driver/Src/*.c")
+file(GLOB SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/OV5642-SPI-Driver/Src/*.c")
 
 # Add the executable using SRC files
 add_library(SPI_CAM 
@@ -12,7 +12,7 @@ add_library(SPI_CAM
 
 # Include headers
 target_include_directories(SPI_CAM 
-    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ArduCam-OV5642-SPI-STM32-Driver/Inc"
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/OV5642-SPI-Driver/Inc"
 )
 
 # target_link_libraries(MAIN PUBLIC STM32CUBEL4_HAL)

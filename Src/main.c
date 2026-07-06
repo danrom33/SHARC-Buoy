@@ -70,6 +70,7 @@ static void MX_LPUART1_UART_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_UART4_Init(void);
+void Save_Image(uint8_t *frame_buffer, uint32_t jpeg_length, char file_name[]);
 // static void BspCOM_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -88,7 +89,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -120,9 +120,22 @@ int main(void)
   // Make printf unbuffered so logs appear immediately
   setvbuf(stdout, NULL, _IONBF, 0);
 
+  uint8_t frame_buffer[65535];
+  uint32_t jpeg_length = 0;
+
   OV5642_Init(&hi2c1, &hspi1, GPIOC, GPIO_PIN_6);
-  OV5642_Take_Picture();
-  /* USER CODE END 2 */
+  OV5642_Set_Jpeg();
+  OV5642_Take_Picture(frame_buffer, &jpeg_length);
+  Save_Image(frame_buffer, jpeg_length, "img.jpg");
+  HAL_Delay(10);
+  // for(int i = 0; i < 5; i++){
+  //   OV5642_Take_Picture(frame_buffer, &jpeg_length);
+  //   char file_name[10];
+  //   sprintf(file_name, "img_%d.jpg", i);
+  //   Save_Image(frame_buffer, jpeg_length, file_name);
+  //   HAL_Delay(10000);
+  // }
+
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -133,6 +146,63 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+void Save_Image(uint8_t *frame_buffer, uint32_t jpeg_length, char file_name[]){
+  FRESULT res;             /* FatFs function common result code */
+  uint32_t byteswritten;   /* Tracks the number of written bytes */
+  uint8_t wtext[] = "Hello from STM32 FatFS!"; /* Data payload */
+  uint8_t workBuffer[_MAX_SS]; /* Working buffer for the formatting tool */
+  char msg[255];
+
+  // 1. Mount the SD card volume
+  // Setting the last parameter to 0 mounts the drive lazily (forces mount on next file operation)
+  res = f_mount(&SDFatFS, (TCHAR const*)SDPath, 1);
+
+  if (res == FR_OK)
+  {
+  //     // 2. Format the completely empty SD card to FAT32/FAT
+  //     // FM_ANY allows FatFS to automatically determine the file system based on card size
+  //     // res = f_mkfs((TCHAR const*)SDPath, FM_ANY, 0, workBuffer, sizeof(workBuffer));
+      
+  //     // if (res == FR_OK)
+  //     // {
+          // 3. Create and open a new text document
+          // FA_CREATE_ALWAYS overrides any existing files and grants write privileges
+          res = f_open(&SDFile, file_name, FA_CREATE_ALWAYS | FA_WRITE);
+          
+          if (res == FR_OK)
+          {
+              // 4. Stream data to the open file descriptor
+              res = f_write(&SDFile, &frame_buffer[2], jpeg_length, (void *)&byteswritten);
+              
+              if ((byteswritten > 0) && (res == FR_OK))
+              {
+                  printf("Image saved\r\n");
+                  // 5. Explicitly close the file to commit data and directory structures
+                  f_close(&SDFile);
+              }
+              else
+              {
+                  // Error handling: Failed to write data
+                  Error_Handler();
+              }
+          }
+          else
+          {
+              // Error handling: Device mounting failed
+              Error_Handler();
+          }
+  }
+  else
+  {
+    // Error handling: Device mounting failed
+    Error_Handler();
+  }
+
+  // 6. Unmount the logical drive to avoid corruption
+  f_mount(NULL, (TCHAR const*)SDPath, 0);
+  /* USER CODE END 2 */
 }
 
 /**
@@ -349,7 +419,7 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
   hsd1.Init.BusWide = SDMMC_BUS_WIDE_1B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd1.Init.ClockDiv = 0;
+  hsd1.Init.ClockDiv = 8;
   hsd1.Init.Transceiver = SDMMC_TRANSCEIVER_DISABLE;
   /* USER CODE BEGIN SDMMC1_Init 2 */
 

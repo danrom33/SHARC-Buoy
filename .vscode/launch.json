@@ -14,7 +14,7 @@
 				"target/stm32l4x.cfg"
 			],
 			"runToEntryPoint": "main",
-			"showDevDebugOutput": "raw",
+			"showDevDebugOutput": "none",
 			"svdFile": "STM32L4R5.svd",
 		}
 	]
