@@ -57,6 +57,7 @@ SD_HandleTypeDef hsd1;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
+uint8_t frame_buffer[400000];
 
 /* USER CODE BEGIN PV */
 
@@ -120,38 +121,39 @@ int main(void)
   // Make printf unbuffered so logs appear immediately
   setvbuf(stdout, NULL, _IONBF, 0);
 
-  uint8_t frame_buffer[300000];
-  memset(frame_buffer, 0, 300000);
+  // uint8_t frame_buffer[300000];
+  // memset(frame_buffer, 0, 300000);
   uint32_t jpeg_length = 0;
 
   OV5642_Init(&hi2c1, &hspi1, GPIOC, GPIO_PIN_6);
   OV5642_StatusTypeDef serial_status = OV5642_TestSerialConnection();
   SD_Mount();
   OV5642_SetJpeg();
+  OV5642_SetResolution(OV5642_2592x1944);
   HAL_Delay(10);
-  // OV5642_TakePicture(frame_buffer, &jpeg_length);
-  // SD_StatusTypeDef status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
+  OV5642_TakePicture(frame_buffer, &jpeg_length);
+  SD_StatusTypeDef status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
   
   
-  for(int i = 0; i < 7; i++){
-    OV5642_SetResolution(i);
-    HAL_Delay(10);
-    // printf("Taking image: %d/5\r\n", i+1);
-    // uint32_t start = HAL_GetTick();
-    OV5642_TakePicture(frame_buffer, &jpeg_length);
-    // uint32_t end = HAL_GetTick();
-    // printf("Take_Picture: %lu ms\r\n", end - start);
-    char file_name[10];
-    sprintf(file_name, "img_%d.jpg", i);
-    // printf("jpeg_length: %d/5: %d", i+1, jpeg_length);
-    // start = HAL_GetTick();
-    SD_StatusTypeDef status = SD_SaveImage(frame_buffer, jpeg_length, file_name);
-    // end = HAL_GetTick();
-    // printf("Save_Picture: %lu ms\r\n", end - start);
-    // printf("%s\r\n", SD_StatusToString(status));
-    memset(frame_buffer, 0, 300000);
-    // HAL_Delay(10);
-  }
+  // for(int i = 0; i < 7; i++){
+  //   OV5642_SetResolution(i);
+  //   HAL_Delay(10);
+  //   // printf("Taking image: %d/5\r\n", i+1);
+  //   // uint32_t start = HAL_GetTick();
+  //   OV5642_TakePicture(frame_buffer, &jpeg_length);
+  //   // uint32_t end = HAL_GetTick();
+  //   // printf("Take_Picture: %lu ms\r\n", end - start);
+  //   char file_name[10];
+  //   sprintf(file_name, "img_%d.jpg", i);
+  //   // printf("jpeg_length: %d/5: %d", i+1, jpeg_length);
+  //   // start = HAL_GetTick();
+  //   SD_StatusTypeDef status = SD_SaveImage(frame_buffer, jpeg_length, file_name);
+  //   // end = HAL_GetTick();
+  //   // printf("Save_Picture: %lu ms\r\n", end - start);
+  //   // printf("%s\r\n", SD_StatusToString(status));
+  //   memset(frame_buffer, 0, 300000);
+  //   // HAL_Delay(10);
+  // }
   
   SD_Unmount();
 

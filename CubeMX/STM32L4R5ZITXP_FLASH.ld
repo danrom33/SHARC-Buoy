@@ -38,7 +38,7 @@
 ENTRY(Reset_Handler)
 
 /* Highest address of the user mode stack */
-_estack = ORIGIN(RAM3) + LENGTH(RAM3); /* end of "RAM3" Ram type memory */
+_estack = ORIGIN(RAM) + LENGTH(RAM); /* end of "RAM3" Ram type memory */
 
 _Min_Heap_Size = 0x200; /* required amount of heap */
 _Min_Stack_Size = 0x400; /* required amount of stack */
@@ -46,9 +46,9 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 /* Memories definition */
 MEMORY
 {
-  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 192K
-  RAM2    (xrw)    : ORIGIN = 0x10000000,   LENGTH = 64K
-  RAM3    (xrw)    : ORIGIN = 0x20040000,   LENGTH = 384K
+  RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 640K
+  /*RAM2    (xrw)    : ORIGIN = 0x10000000,   LENGTH = 64K
+  RAM3    (xrw)    : ORIGIN = 0x20040000,   LENGTH = 384K*/
   FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 2048K
 }
 
@@ -150,7 +150,7 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
 
-  } >RAM3 AT> FLASH
+  } >RAM AT> FLASH
 
   /* Uninitialized data section into "RAM3" Ram type memory */
   . = ALIGN(4);
@@ -166,7 +166,7 @@ SECTIONS
     . = ALIGN(4);
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
-  } >RAM3
+  } >RAM
 
   /* User_heap_stack section, used to check that there is enough "RAM3" Ram  type memory left */
   ._user_heap_stack :
@@ -177,7 +177,7 @@ SECTIONS
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
-  } >RAM3
+  } >RAM
 
   /* Remove information from the compiler libraries */
   /DISCARD/ :
