@@ -18,8 +18,9 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "fatfs.h"
+#include "sd.h"
 #include "spi_cam.h"
+#include <string.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h> // Required for _write() syscall function
@@ -70,7 +71,6 @@ static void MX_LPUART1_UART_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_UART4_Init(void);
-void Save_Image(uint8_t *frame_buffer, uint32_t jpeg_length, char file_name[]);
 // static void BspCOM_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -120,21 +120,40 @@ int main(void)
   // Make printf unbuffered so logs appear immediately
   setvbuf(stdout, NULL, _IONBF, 0);
 
-  uint8_t frame_buffer[65535];
+  uint8_t frame_buffer[300000];
+  memset(frame_buffer, 0, 300000);
   uint32_t jpeg_length = 0;
 
   OV5642_Init(&hi2c1, &hspi1, GPIOC, GPIO_PIN_6);
-  OV5642_Set_Jpeg();
-  OV5642_Take_Picture(frame_buffer, &jpeg_length);
-  Save_Image(frame_buffer, jpeg_length, "img.jpg");
+  OV5642_StatusTypeDef serial_status = OV5642_TestSerialConnection();
+  SD_Mount();
+  OV5642_SetJpeg();
   HAL_Delay(10);
-  // for(int i = 0; i < 5; i++){
-  //   OV5642_Take_Picture(frame_buffer, &jpeg_length);
-  //   char file_name[10];
-  //   sprintf(file_name, "img_%d.jpg", i);
-  //   Save_Image(frame_buffer, jpeg_length, file_name);
-  //   HAL_Delay(10000);
-  // }
+  // OV5642_TakePicture(frame_buffer, &jpeg_length);
+  // SD_StatusTypeDef status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
+  
+  
+  for(int i = 0; i < 7; i++){
+    OV5642_SetResolution(i);
+    HAL_Delay(10);
+    // printf("Taking image: %d/5\r\n", i+1);
+    // uint32_t start = HAL_GetTick();
+    OV5642_TakePicture(frame_buffer, &jpeg_length);
+    // uint32_t end = HAL_GetTick();
+    // printf("Take_Picture: %lu ms\r\n", end - start);
+    char file_name[10];
+    sprintf(file_name, "img_%d.jpg", i);
+    // printf("jpeg_length: %d/5: %d", i+1, jpeg_length);
+    // start = HAL_GetTick();
+    SD_StatusTypeDef status = SD_SaveImage(frame_buffer, jpeg_length, file_name);
+    // end = HAL_GetTick();
+    // printf("Save_Picture: %lu ms\r\n", end - start);
+    // printf("%s\r\n", SD_StatusToString(status));
+    memset(frame_buffer, 0, 300000);
+    // HAL_Delay(10);
+  }
+  
+  SD_Unmount();
 
 
   /* Infinite loop */
@@ -146,63 +165,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
-
-void Save_Image(uint8_t *frame_buffer, uint32_t jpeg_length, char file_name[]){
-  FRESULT res;             /* FatFs function common result code */
-  uint32_t byteswritten;   /* Tracks the number of written bytes */
-  uint8_t wtext[] = "Hello from STM32 FatFS!"; /* Data payload */
-  uint8_t workBuffer[_MAX_SS]; /* Working buffer for the formatting tool */
-  char msg[255];
-
-  // 1. Mount the SD card volume
-  // Setting the last parameter to 0 mounts the drive lazily (forces mount on next file operation)
-  res = f_mount(&SDFatFS, (TCHAR const*)SDPath, 1);
-
-  if (res == FR_OK)
-  {
-  //     // 2. Format the completely empty SD card to FAT32/FAT
-  //     // FM_ANY allows FatFS to automatically determine the file system based on card size
-  //     // res = f_mkfs((TCHAR const*)SDPath, FM_ANY, 0, workBuffer, sizeof(workBuffer));
-      
-  //     // if (res == FR_OK)
-  //     // {
-          // 3. Create and open a new text document
-          // FA_CREATE_ALWAYS overrides any existing files and grants write privileges
-          res = f_open(&SDFile, file_name, FA_CREATE_ALWAYS | FA_WRITE);
-          
-          if (res == FR_OK)
-          {
-              // 4. Stream data to the open file descriptor
-              res = f_write(&SDFile, &frame_buffer[2], jpeg_length, (void *)&byteswritten);
-              
-              if ((byteswritten > 0) && (res == FR_OK))
-              {
-                  printf("Image saved\r\n");
-                  // 5. Explicitly close the file to commit data and directory structures
-                  f_close(&SDFile);
-              }
-              else
-              {
-                  // Error handling: Failed to write data
-                  Error_Handler();
-              }
-          }
-          else
-          {
-              // Error handling: Device mounting failed
-              Error_Handler();
-          }
-  }
-  else
-  {
-    // Error handling: Device mounting failed
-    Error_Handler();
-  }
-
-  // 6. Unmount the logical drive to avoid corruption
-  f_mount(NULL, (TCHAR const*)SDPath, 0);
-  /* USER CODE END 2 */
 }
 
 /**
@@ -271,14 +233,14 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x10D19CE4;
+   hi2c1.Init.Timing = 0x10D19CE4;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
   hi2c1.Init.OwnAddress2 = 0;
   hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
   hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_ENABLE;
   if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
     Error_Handler();

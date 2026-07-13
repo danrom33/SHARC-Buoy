@@ -5,3 +5,6 @@
 	path = Libraries/OV5642-SPI-Driver
 	url = https://github.com/danrom33/OV5642-SPI-Driver.git
 	branch = driver-refactor
+[submodule "Libraries/SD-Driver"]
+	path = Libraries/SD-Driver
+	url = https://github.com/danrom33/SD-Driver.git

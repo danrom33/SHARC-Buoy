@@ -434,6 +434,7 @@ void HAL_SD_MspDeInit(SD_HandleTypeDef* hsd)
 
 }
 
+
 /**
   * @brief SPI MSP Initialization
   * This function configures the hardware resources used in this example
