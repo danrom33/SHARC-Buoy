@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h> // Required for _write() syscall function
+
+#include "arm_math.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -57,7 +59,7 @@ SD_HandleTypeDef hsd1;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
-uint8_t frame_buffer[400000];
+uint8_t frame_buffer[600000];
 
 /* USER CODE BEGIN PV */
 
@@ -121,41 +123,84 @@ int main(void)
   // Make printf unbuffered so logs appear immediately
   setvbuf(stdout, NULL, _IONBF, 0);
 
+  float32_t test = 0.5f;
+  float32_t test2 = 2.2f;
+
+  float32_t result = test/test2;
+
   // uint8_t frame_buffer[300000];
   // memset(frame_buffer, 0, 300000);
   uint32_t jpeg_length = 0;
+  OV5642_StatusTypeDef cam_status;
+  SD_StatusTypeDef sd_status;
+  uint8_t cam_ready = 0;
+  uint8_t sd_mounted = 0;
 
-  OV5642_Init(&hi2c1, &hspi1, GPIOC, GPIO_PIN_6);
-  OV5642_StatusTypeDef serial_status = OV5642_TestSerialConnection();
-  SD_Mount();
-  OV5642_SetJpeg();
-  OV5642_SetResolution(OV5642_2592x1944);
-  HAL_Delay(10);
-  OV5642_TakePicture(frame_buffer, &jpeg_length);
-  SD_StatusTypeDef status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
-  
-  
-  // for(int i = 0; i < 7; i++){
-  //   OV5642_SetResolution(i);
-  //   HAL_Delay(10);
-  //   // printf("Taking image: %d/5\r\n", i+1);
-  //   // uint32_t start = HAL_GetTick();
-  //   OV5642_TakePicture(frame_buffer, &jpeg_length);
-  //   // uint32_t end = HAL_GetTick();
-  //   // printf("Take_Picture: %lu ms\r\n", end - start);
-  //   char file_name[10];
-  //   sprintf(file_name, "img_%d.jpg", i);
-  //   // printf("jpeg_length: %d/5: %d", i+1, jpeg_length);
-  //   // start = HAL_GetTick();
-  //   SD_StatusTypeDef status = SD_SaveImage(frame_buffer, jpeg_length, file_name);
-  //   // end = HAL_GetTick();
-  //   // printf("Save_Picture: %lu ms\r\n", end - start);
-  //   // printf("%s\r\n", SD_StatusToString(status));
-  //   memset(frame_buffer, 0, 300000);
-  //   // HAL_Delay(10);
-  // }
-  
-  SD_Unmount();
+  cam_status = OV5642_Init(&hi2c1, &hspi1, GPIOC, GPIO_PIN_6);
+  if (cam_status != OV5642_OK)
+  {
+    printf("OV5642_Init failed: %s\r\n", OV5642_StatusToString(cam_status));
+  }
+
+  cam_status = OV5642_TestSerialConnection();
+  if (cam_status != OV5642_OK)
+  {
+    printf("OV5642_TestSerialConnection failed: %s\r\n", OV5642_StatusToString(cam_status));
+  }
+  else
+  {
+    cam_ready = 1;
+  }
+
+  sd_status = SD_Mount();
+  if (sd_status != SD_OK)
+  {
+    printf("SD_Mount failed: %s\r\n", SD_StatusToString(sd_status));
+  }
+  else
+  {
+    sd_mounted = 1;
+  }
+
+  if (cam_ready)
+  {
+    cam_status = OV5642_SetJpeg();
+    if (cam_status != OV5642_OK)
+    {
+      printf("OV5642_SetJpeg failed: %s\r\n", OV5642_StatusToString(cam_status));
+    }
+
+    cam_status = OV5642_SetResolution(OV5642_2592x1944);
+    if (cam_status != OV5642_OK)
+    {
+      printf("OV5642_SetResolution failed: %s\r\n", OV5642_StatusToString(cam_status));
+    }
+
+    HAL_Delay(500);
+
+    cam_status = OV5642_TakePicture(frame_buffer, &jpeg_length);
+    if (cam_status != OV5642_OK)
+    {
+      printf("OV5642_TakePicture failed: %s\r\n", OV5642_StatusToString(cam_status));
+    }
+    else if (sd_mounted)
+    {
+      sd_status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
+      if (sd_status != SD_OK)
+      {
+        printf("SD_SaveImage failed: %s\r\n", SD_StatusToString(sd_status));
+      }
+    }
+  }
+
+  if (sd_mounted)
+  {
+    sd_status = SD_Unmount();
+    if (sd_status != SD_OK)
+    {
+      printf("SD_Unmount failed: %s\r\n", SD_StatusToString(sd_status));
+    }
+  }
 
 
   /* Infinite loop */
@@ -283,7 +328,7 @@ static void MX_LPUART1_UART_Init(void)
 
   /* USER CODE END LPUART1_Init 1 */
   hlpuart1.Instance = LPUART1;
-  hlpuart1.Init.BaudRate = 209700;
+  hlpuart1.Init.BaudRate = 230400;
   hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
   hlpuart1.Init.StopBits = UART_STOPBITS_1;
   hlpuart1.Init.Parity = UART_PARITY_NONE;
@@ -383,8 +428,14 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Init.ClockPowerSave = SDMMC_CLOCK_POWER_SAVE_DISABLE;
   hsd1.Init.BusWide = SDMMC_BUS_WIDE_1B;
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd1.Init.ClockDiv = 8;
+  hsd1.Init.ClockDiv = 4;
   hsd1.Init.Transceiver = SDMMC_TRANSCEIVER_DISABLE;
+  if (HAL_SD_Init(&hsd1) != HAL_OK) { 
+    //Error handling here
+  }
+  if (HAL_SD_ConfigWideBusOperation(&hsd1, SDMMC_BUS_WIDE_4B) != HAL_OK) {
+    //Error handling here
+  }
   /* USER CODE BEGIN SDMMC1_Init 2 */
 
   /* USER CODE END SDMMC1_Init 2 */

@@ -13,7 +13,7 @@ set(STM32CUBEL4_HAL_INCLUDE_DIRECTORIES
 	# ${CMAKE_SOURCE_DIR}/Libraries/STM32CubeL4/Drivers/STM32L4xx_HAL_Driver/Inc/Legacy
 	${CMAKE_SOURCE_DIR}/Libraries/STM32CubeL4/Drivers/CMSIS/Device/ST/STM32L4xx/Include
 	${CMAKE_SOURCE_DIR}/Libraries/STM32CubeL4/Drivers/CMSIS/Include
-	# ${CMAKE_SOURCE_DIR}/Libraries/STM32CubeL4/Drivers/CMSIS/DSP/Include
+	${CMAKE_SOURCE_DIR}/Libraries/STM32CubeL4/Drivers/CMSIS/DSP/Include
 )
 
 file(GLOB STM32CUBEL4_HAL_SOURCES
