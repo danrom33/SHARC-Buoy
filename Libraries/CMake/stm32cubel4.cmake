@@ -30,16 +30,16 @@ add_library(STM32CUBEL4_HAL STATIC
 	${STM32CUBEL4_HAL_SOURCES}
 )
 
-#Only for DSP Library?
-# add_library(ARM_MATH_LIB STATIC IMPORTED)
-# set_target_properties(ARM_MATH_LIB PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/Modules/STM32CubeL4/Drivers/CMSIS/DSP/Lib/GCC/libarm_cortexM4lf_math.a)
+#Only for DSP Library
+add_library(ARM_MATH_LIB STATIC IMPORTED)
+set_target_properties(ARM_MATH_LIB PROPERTIES IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/Libraries/STM32CubeL4/Drivers/CMSIS/DSP/Lib/GCC/libarm_cortexM4lf_math.a)
 
-# target_link_libraries(STM32CUBEL4_HAL PUBLIC ARM_MATH_LIB)
+target_link_libraries(STM32CUBEL4_HAL PUBLIC ARM_MATH_LIB)
 
 set(STM32CUBEL4_HAL_COMPILE_DEFINITIONS
 	USE_HAL_DRIVER
 	STM32L4R5xx
-	# ARM_MATH_CM4
+	ARM_MATH_CM4
 )
 
 target_compile_definitions(STM32CUBEL4_HAL PUBLIC

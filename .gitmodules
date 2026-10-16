@@ -8,3 +8,6 @@
 [submodule "Libraries/SD-Driver"]
 	path = Libraries/SD-Driver
 	url = https://github.com/danrom33/SD-Driver.git
+[submodule "Libraries/Inertial-Event-Detection"]
+	path = Libraries/Inertial-Event-Detection
+	url = https://github.com/danrom33/Inertial-Event-Detection.git

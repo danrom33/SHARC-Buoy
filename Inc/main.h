@@ -57,7 +57,30 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-
+#define GPIO_I_EN_Pin GPIO_PIN_2
+#define GPIO_I_EN_GPIO_Port GPIOE
+#define GPIO_5V_EN_Pin GPIO_PIN_13
+#define GPIO_5V_EN_GPIO_Port GPIOC
+#define GPIO_INA_A_Pin GPIO_PIN_6
+#define GPIO_INA_A_GPIO_Port GPIOF
+#define GPIO_P_EN_Pin GPIO_PIN_2
+#define GPIO_P_EN_GPIO_Port GPIOC
+#define GPIO_OW_Pin GPIO_PIN_3
+#define GPIO_OW_GPIO_Port GPIOC
+#define GPIO_I_WK_O_Pin GPIO_PIN_0
+#define GPIO_I_WK_O_GPIO_Port GPIOB
+#define SPI1_CS_Pin GPIO_PIN_12
+#define SPI1_CS_GPIO_Port GPIOE
+#define EXTI_INT1_Pin GPIO_PIN_2
+#define EXTI_INT1_GPIO_Port GPIOG
+#define GPIO_I_BTD_Pin GPIO_PIN_3
+#define GPIO_I_BTD_GPIO_Port GPIOG
+#define GPIO_SD_Detect_Pin GPIO_PIN_6
+#define GPIO_SD_Detect_GPIO_Port GPIOG
+#define GPIO_I_WK_I_Pin GPIO_PIN_4
+#define GPIO_I_WK_I_GPIO_Port GPIOD
+#define GPIO__Pin GPIO_PIN_11
+#define GPIO__GPIO_Port GPIOG
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

@@ -25,7 +25,11 @@
 #include <stdint.h>
 #include <unistd.h> // Required for _write() syscall function
 
-#include "arm_math.h"
+#ifdef TEST_REPLAY
+#include "replay_test.h"
+#endif
+
+#include "event_detection.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -47,7 +51,11 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+DCMI_HandleTypeDef hdcmi;
+
 I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c2;
+I2C_HandleTypeDef hi2c3;
 
 UART_HandleTypeDef hlpuart1;
 UART_HandleTypeDef huart4;
@@ -59,6 +67,8 @@ SD_HandleTypeDef hsd1;
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
+
+TIM_HandleTypeDef htim1;
 uint8_t frame_buffer[600000];
 
 /* USER CODE BEGIN PV */
@@ -74,8 +84,12 @@ static void MX_LPUART1_UART_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_UART4_Init(void);
-// static void BspCOM_Init(void);
+static void MX_DCMI_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_I2C2_Init(void);
+static void MX_I2C3_Init(void);
 /* USER CODE BEGIN PFP */
+
 
 /* USER CODE END PFP */
 
@@ -119,24 +133,28 @@ int main(void)
   MX_SPI1_Init();
   MX_FATFS_Init();
   MX_UART4_Init();
+  MX_DCMI_Init();
+  MX_TIM1_Init();
+  MX_I2C2_Init();
+  MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
   // Make printf unbuffered so logs appear immediately
   setvbuf(stdout, NULL, _IONBF, 0);
 
-  float32_t test = 0.5f;
-  float32_t test2 = 2.2f;
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
 
-  float32_t result = test/test2;
+  #ifdef TEST_REPLAY
+    Replay_Test_Run();
+  #endif
 
-  // uint8_t frame_buffer[300000];
-  // memset(frame_buffer, 0, 300000);
+
   uint32_t jpeg_length = 0;
   OV5642_StatusTypeDef cam_status;
   SD_StatusTypeDef sd_status;
   uint8_t cam_ready = 0;
   uint8_t sd_mounted = 0;
 
-  cam_status = OV5642_Init(&hi2c1, &hspi1, GPIOC, GPIO_PIN_6);
+  cam_status = OV5642_Init(&hi2c1, &hspi1, GPIOE, GPIO_PIN_12);
   if (cam_status != OV5642_OK)
   {
     printf("OV5642_Init failed: %s\r\n", OV5642_StatusToString(cam_status));
@@ -152,15 +170,15 @@ int main(void)
     cam_ready = 1;
   }
 
-  sd_status = SD_Mount();
-  if (sd_status != SD_OK)
-  {
-    printf("SD_Mount failed: %s\r\n", SD_StatusToString(sd_status));
-  }
-  else
-  {
-    sd_mounted = 1;
-  }
+  // sd_status = SD_Mount();
+  // if (sd_status != SD_OK)
+  // {
+  //   printf("SD_Mount failed: %s\r\n", SD_StatusToString(sd_status));
+  // }
+  // else
+  // {
+  //   sd_mounted = 1;
+  // }
 
   if (cam_ready)
   {
@@ -183,24 +201,24 @@ int main(void)
     {
       printf("OV5642_TakePicture failed: %s\r\n", OV5642_StatusToString(cam_status));
     }
-    else if (sd_mounted)
-    {
-      sd_status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
-      if (sd_status != SD_OK)
-      {
-        printf("SD_SaveImage failed: %s\r\n", SD_StatusToString(sd_status));
-      }
-    }
+    // else if (sd_mounted)
+    // {
+    //   sd_status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
+    //   if (sd_status != SD_OK)
+    //   {
+    //     printf("SD_SaveImage failed: %s\r\n", SD_StatusToString(sd_status));
+    //   }
+    // }
   }
 
-  if (sd_mounted)
-  {
-    sd_status = SD_Unmount();
-    if (sd_status != SD_OK)
-    {
-      printf("SD_Unmount failed: %s\r\n", SD_StatusToString(sd_status));
-    }
-  }
+  // if (sd_mounted)
+  // {
+  //   sd_status = SD_Unmount();
+  //   if (sd_status != SD_OK)
+  //   {
+  //     printf("SD_Unmount failed: %s\r\n", SD_StatusToString(sd_status));
+  //   }
+  // }
 
 
   /* Infinite loop */
@@ -262,6 +280,44 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_SYSCLK, RCC_MCODIV_1);
+}
+
+/**
+  * @brief DCMI Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_DCMI_Init(void)
+{
+
+  /* USER CODE BEGIN DCMI_Init 0 */
+
+  /* USER CODE END DCMI_Init 0 */
+
+  /* USER CODE BEGIN DCMI_Init 1 */
+
+  /* USER CODE END DCMI_Init 1 */
+  hdcmi.Instance = DCMI;
+  hdcmi.Init.SynchroMode = DCMI_SYNCHRO_HARDWARE;
+  hdcmi.Init.PCKPolarity = DCMI_PCKPOLARITY_FALLING;
+  hdcmi.Init.VSPolarity = DCMI_VSPOLARITY_LOW;
+  hdcmi.Init.HSPolarity = DCMI_HSPOLARITY_LOW;
+  hdcmi.Init.CaptureRate = DCMI_CR_ALL_FRAME;
+  hdcmi.Init.ExtendedDataMode = DCMI_EXTEND_DATA_8B;
+  hdcmi.Init.JPEGMode = DCMI_JPEG_DISABLE;
+  hdcmi.Init.ByteSelectMode = DCMI_BSM_ALL;
+  hdcmi.Init.ByteSelectStart = DCMI_OEBS_ODD;
+  hdcmi.Init.LineSelectMode = DCMI_LSM_ALL;
+  hdcmi.Init.LineSelectStart = DCMI_OELS_ODD;
+  if (HAL_DCMI_Init(&hdcmi) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN DCMI_Init 2 */
+
+  /* USER CODE END DCMI_Init 2 */
+
 }
 
 /**
@@ -280,7 +336,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-   hi2c1.Init.Timing = 0x10D19CE4;
+  hi2c1.Init.Timing = 0x10D19CE4;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -309,6 +365,102 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C2_Init(void)
+{
+
+  /* USER CODE BEGIN I2C2_Init 0 */
+
+  /* USER CODE END I2C2_Init 0 */
+
+  /* USER CODE BEGIN I2C2_Init 1 */
+
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.Timing = 0x10D19CE4;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c2, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c2, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C2_Init 2 */
+
+  /* USER CODE END I2C2_Init 2 */
+
+}
+
+/**
+  * @brief I2C3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C3_Init(void)
+{
+
+  /* USER CODE BEGIN I2C3_Init 0 */
+
+  /* USER CODE END I2C3_Init 0 */
+
+  /* USER CODE BEGIN I2C3_Init 1 */
+
+  /* USER CODE END I2C3_Init 1 */
+  hi2c3.Instance = I2C3;
+  hi2c3.Init.Timing = 0x10D19CE4;
+  hi2c3.Init.OwnAddress1 = 0;
+  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c3.Init.OwnAddress2 = 0;
+  hi2c3.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Analogue filter
+  */
+  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c3, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure Digital filter
+  */
+  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c3, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C3_Init 2 */
+
+  /* USER CODE END I2C3_Init 2 */
 
 }
 
@@ -430,14 +582,13 @@ static void MX_SDMMC1_SD_Init(void)
   hsd1.Init.HardwareFlowControl = SDMMC_HARDWARE_FLOW_CONTROL_DISABLE;
   hsd1.Init.ClockDiv = 4;
   hsd1.Init.Transceiver = SDMMC_TRANSCEIVER_DISABLE;
-  if (HAL_SD_Init(&hsd1) != HAL_OK) { 
+  /* USER CODE BEGIN SDMMC1_Init 2 */
+   if (HAL_SD_Init(&hsd1) != HAL_OK) { 
     //Error handling here
   }
   if (HAL_SD_ConfigWideBusOperation(&hsd1, SDMMC_BUS_WIDE_4B) != HAL_OK) {
     //Error handling here
   }
-  /* USER CODE BEGIN SDMMC1_Init 2 */
-
   /* USER CODE END SDMMC1_Init 2 */
 
 }
@@ -483,6 +634,53 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 79;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -513,11 +711,6 @@ static void MX_DMA_Init(void)
   * @param None
   * @retval None
   */
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -526,27 +719,93 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOF_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOG_CLK_ENABLE();
   HAL_PWREx_EnableVddIO2();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_6, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, GPIO_I_EN_Pin|SPI1_CS_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PC5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_5V_EN_Pin|GPIO_P_EN_Pin|GPIO_OW_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIO_I_WK_I_GPIO_Port, GPIO_I_WK_I_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIO__GPIO_Port, GPIO__Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : GPIO_I_EN_Pin SPI1_CS_Pin */
+  GPIO_InitStruct.Pin = GPIO_I_EN_Pin|SPI1_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PC6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  /*Configure GPIO pins : GPIO_5V_EN_Pin GPIO_P_EN_Pin */
+  GPIO_InitStruct.Pin = GPIO_5V_EN_Pin|GPIO_P_EN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : GPIO_INA_A_Pin */
+  GPIO_InitStruct.Pin = GPIO_INA_A_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIO_INA_A_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : GPIO_OW_Pin */
+  GPIO_InitStruct.Pin = GPIO_OW_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIO_OW_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : GPIO_I_WK_O_Pin */
+  GPIO_InitStruct.Pin = GPIO_I_WK_O_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIO_I_WK_O_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : EXTI_INT1_Pin */
+  GPIO_InitStruct.Pin = EXTI_INT1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(EXTI_INT1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : GPIO_I_BTD_Pin GPIO_SD_Detect_Pin */
+  GPIO_InitStruct.Pin = GPIO_I_BTD_Pin|GPIO_SD_Detect_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : GPIO_I_WK_I_Pin */
+  GPIO_InitStruct.Pin = GPIO_I_WK_I_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIO_I_WK_I_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : GPIO__Pin */
+  GPIO_InitStruct.Pin = GPIO__Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIO__GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -554,7 +813,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
 
 /* Retarget printf/puts to LPUART1 (USB VCP) */
 int _write(int file, char *ptr, int len)

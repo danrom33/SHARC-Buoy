@@ -6,7 +6,12 @@
     {
       "label": "Generate build system",
       "type": "shell",
-      "command": "cmake -G 'Ninja' -B 'build' ./ -DCMAKE_TOOLCHAIN_FILE='CMake/arm-none-eabi.cmake' -DCMAKE_BUILD_TYPE=debug",
+      "command": "cmake -G 'Ninja' -B 'build' ./ -DCMAKE_TOOLCHAIN_FILE='CMake/arm-none-eabi.cmake' -DCMAKE_BUILD_TYPE=debug -DTEST_REPLAY=OFF",
+    },
+    {
+      "label": "Generate Build System (Replay Test)",
+      "type": "shell",
+      "command": "cmake -G 'Ninja' -B 'build' ./ -DCMAKE_TOOLCHAIN_FILE='CMake/arm-none-eabi.cmake' -DCMAKE_BUILD_TYPE=debug -DTEST_REPLAY=ON",
     },
     {
       "label": "Build Project",
