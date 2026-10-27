@@ -30,6 +30,8 @@
 #endif
 
 #include "event_detection.h"
+#include "lsm6dsv16xtr.h"
+#include "power_monitor.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -141,11 +143,14 @@ int main(void)
   // Make printf unbuffered so logs appear immediately
   setvbuf(stdout, NULL, _IONBF, 0);
 
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_5V_EN_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOE, GPIO_I_EN_Pin, GPIO_PIN_SET);
 
   #ifdef TEST_REPLAY
     Replay_Test_Run();
   #endif
+
+  lsm6dsv16x_self_test();
 
 
   uint32_t jpeg_length = 0;
@@ -170,15 +175,15 @@ int main(void)
     cam_ready = 1;
   }
 
-  // sd_status = SD_Mount();
-  // if (sd_status != SD_OK)
-  // {
-  //   printf("SD_Mount failed: %s\r\n", SD_StatusToString(sd_status));
-  // }
-  // else
-  // {
-  //   sd_mounted = 1;
-  // }
+  sd_status = SD_Mount();
+  if (sd_status != SD_OK)
+  {
+    printf("SD_Mount failed: %s\r\n", SD_StatusToString(sd_status));
+  }
+  else
+  {
+    sd_mounted = 1;
+  }
 
   if (cam_ready)
   {
@@ -201,24 +206,24 @@ int main(void)
     {
       printf("OV5642_TakePicture failed: %s\r\n", OV5642_StatusToString(cam_status));
     }
-    // else if (sd_mounted)
-    // {
-    //   sd_status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
-    //   if (sd_status != SD_OK)
-    //   {
-    //     printf("SD_SaveImage failed: %s\r\n", SD_StatusToString(sd_status));
-    //   }
-    // }
+    else if (sd_mounted)
+    {
+      sd_status = SD_SaveImage(frame_buffer, jpeg_length, "img.jpg");
+      if (sd_status != SD_OK)
+      {
+        printf("SD_SaveImage failed: %s\r\n", SD_StatusToString(sd_status));
+      }
+    }
   }
 
-  // if (sd_mounted)
-  // {
-  //   sd_status = SD_Unmount();
-  //   if (sd_status != SD_OK)
-  //   {
-  //     printf("SD_Unmount failed: %s\r\n", SD_StatusToString(sd_status));
-  //   }
-  // }
+  if (sd_mounted)
+  {
+    sd_status = SD_Unmount();
+    if (sd_status != SD_OK)
+    {
+      printf("SD_Unmount failed: %s\r\n", SD_StatusToString(sd_status));
+    }
+  }
 
 
   /* Infinite loop */

@@ -11,3 +11,16 @@
 [submodule "Libraries/Inertial-Event-Detection"]
 	path = Libraries/Inertial-Event-Detection
 	url = https://github.com/danrom33/Inertial-Event-Detection.git
+[submodule "Libraries/lsm6dsv16x-pid"]
+	path = Libraries/lsm6dsv16x-pid
+	url = https://github.com/STMicroelectronics/lsm6dsv16x-pid.git
+[submodule "Libraries/LSM6DSV16XTR"]
+	path = Libraries/LSM6DSV16XTR
+	url = https://github.com/danrom33/LSM6DSV16XTR.git
+[submodule "Libraries/INA226"]
+	path = Libraries/INA226
+	url = https://github.com/patsaoglou/INA226.git
+[submodule "Libraries/ArduCam-OV5642-STM32-Driver"]
+	path = Libraries/ArduCam-OV5642-STM32-Driver
+	url = https://github.com/danrom33/ArduCam-OV5642-STM32-Driver.git
+	branch = driver-refactor
