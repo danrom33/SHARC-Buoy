@@ -19,7 +19,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "sd.h"
-#include "spi_cam.h"
+// #include "spi_cam.h"
+#include "dvp_cam.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -31,7 +32,7 @@
 
 #include "event_detection.h"
 #include "lsm6dsv16xtr.h"
-#include "power_monitor.h"
+// #include "power_monitor.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -54,6 +55,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 DCMI_HandleTypeDef hdcmi;
+DMA_HandleTypeDef hdma_dcmi;
 
 I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
@@ -71,7 +73,7 @@ DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
 
 TIM_HandleTypeDef htim1;
-uint8_t frame_buffer[600000];
+uint8_t frame_buffer[OV5642_MAX_CAPTURE_BYTES] __attribute__((aligned(4)));
 
 /* USER CODE BEGIN PV */
 
@@ -159,7 +161,7 @@ int main(void)
   uint8_t cam_ready = 0;
   uint8_t sd_mounted = 0;
 
-  cam_status = OV5642_Init(&hi2c1, &hspi1, GPIOE, GPIO_PIN_12);
+  cam_status = OV5642_Init(&hi2c1, &hdcmi);
   if (cam_status != OV5642_OK)
   {
     printf("OV5642_Init failed: %s\r\n", OV5642_StatusToString(cam_status));
@@ -193,7 +195,7 @@ int main(void)
       printf("OV5642_SetJpeg failed: %s\r\n", OV5642_StatusToString(cam_status));
     }
 
-    cam_status = OV5642_SetResolution(OV5642_2592x1944);
+    cam_status = OV5642_SetResolution(OV5642_320x240);
     if (cam_status != OV5642_OK)
     {
       printf("OV5642_SetResolution failed: %s\r\n", OV5642_StatusToString(cam_status));
@@ -201,7 +203,7 @@ int main(void)
 
     HAL_Delay(500);
 
-    cam_status = OV5642_TakePicture(frame_buffer, &jpeg_length);
+    cam_status = OV5642_TakePicture(frame_buffer, OV5642_MAX_CAPTURE_BYTES, &jpeg_length);
     if (cam_status != OV5642_OK)
     {
       printf("OV5642_TakePicture failed: %s\r\n", OV5642_StatusToString(cam_status));
@@ -285,7 +287,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_SYSCLK, RCC_MCODIV_1);
+  HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_MSI, RCC_MCODIV_1);
 }
 
 /**
@@ -305,12 +307,12 @@ static void MX_DCMI_Init(void)
   /* USER CODE END DCMI_Init 1 */
   hdcmi.Instance = DCMI;
   hdcmi.Init.SynchroMode = DCMI_SYNCHRO_HARDWARE;
-  hdcmi.Init.PCKPolarity = DCMI_PCKPOLARITY_FALLING;
-  hdcmi.Init.VSPolarity = DCMI_VSPOLARITY_LOW;
+  hdcmi.Init.PCKPolarity = DCMI_PCKPOLARITY_RISING;
+  hdcmi.Init.VSPolarity = DCMI_VSPOLARITY_HIGH;
   hdcmi.Init.HSPolarity = DCMI_HSPOLARITY_LOW;
   hdcmi.Init.CaptureRate = DCMI_CR_ALL_FRAME;
   hdcmi.Init.ExtendedDataMode = DCMI_EXTEND_DATA_8B;
-  hdcmi.Init.JPEGMode = DCMI_JPEG_DISABLE;
+  hdcmi.Init.JPEGMode = DCMI_JPEG_ENABLE;
   hdcmi.Init.ByteSelectMode = DCMI_BSM_ALL;
   hdcmi.Init.ByteSelectStart = DCMI_OEBS_ODD;
   hdcmi.Init.LineSelectMode = DCMI_LSM_ALL;
@@ -708,7 +710,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel4_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
-
+  /* DMA1_Channel5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 }
 
 /**

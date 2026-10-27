@@ -30,4 +30,4 @@ if(TEST_REPLAY)
     target_compile_definitions(MAIN PRIVATE TEST_REPLAY)
 endif()
 
-target_link_libraries(MAIN PUBLIC SPI_CAM)
+target_link_libraries(MAIN PUBLIC DVP_CAM)
